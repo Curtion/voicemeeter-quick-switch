@@ -1,3 +1,3 @@
 bus = "OutputA2" # OutputA2输出口
-device = "扬声器 (Realtek USB Audio)" # 需要切换音频设备
-sleep = 100 # 延迟500ms,如果切换无效尝试增加延迟时间
+device = "扬声器 (Realtek USB Audio)" # 需要操作的音频设备
+sleep = 100 # 延迟500ms,如果操作无效尝试增加延迟时间

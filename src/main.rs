@@ -1,7 +1,7 @@
+use serde::Deserialize;
+use std::env;
 use std::error::Error;
 use voicemeeter::{types::Device, VoicemeeterRemote};
-
-use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone)]
 struct Config {
@@ -32,68 +32,46 @@ impl From<Bus> for Device {
 }
 
 fn main() {
+    let args = env::args().collect::<Vec<String>>();
+    if args.len() < 1 {
+        panic!("Invalid arguments, please provide a status on or off");
+    }
+    let status = args.get(1).unwrap();
+    if status == "on" {
+        toggle(true).unwrap();
+    } else if status == "off" {
+        toggle(false).unwrap();
+    } else {
+        panic!("Invalid arguments, please provide a status on or off");
+    }
+}
+
+fn toggle(status: bool) -> Result<(), Box<dyn Error>> {
     let config = std::fs::read_to_string("config.toml").unwrap();
     let config: Config = toml::from_str(&config).unwrap();
-    toggle(config.clone()).unwrap();
-}
-
-fn toggle(config: Config) -> Result<(), Box<dyn Error>> {
-    // println!(
-    //     "{} Verion: {}",
-    //     remote.program,
-    //     remote.get_voicemeeter_version()?
-    // );
     let remote = VoicemeeterRemote::new()?;
-    loop {
-        let remote = VoicemeeterRemote::new()?;
-        let current_device = get_current_name(remote, config.clone())?;
-        println!("Current Device: {}", current_device);
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+    println!(
+        "{} Verion: {}",
+        remote.program,
+        remote.get_voicemeeter_version()?
+    );
+    if !status {
+        println!("Stop Device: {}", config.device);
+        remote
+            .parameters()
+            .bus(Device::from(config.bus.clone()))?
+            .device()
+            .mme()
+            .set("")?;
+    } else {
+        println!("Start Device: {}", config.device);
+        remote
+            .parameters()
+            .bus(Device::from(config.bus.clone()))?
+            .device()
+            .mme()
+            .set(&config.device)?;
     }
-    // remote
-    //     .parameters()
-    //     .bus(Device::from(config.bus.clone()))?
-    //     .device()
-    //     .mme()
-    //     .set("")?;
-    // remote
-    //     .parameters()
-    //     .bus(Device::from(config.bus.clone()))?
-    //     .device()
-    //     .mme()
-    //     .set(&config.device)?;
-    // let current_device = remote
-    //     .parameters()
-    //     .bus(Device::from(config.bus.clone()))?
-    //     .device()
-    //     .name()
-    //     .get()?;
-    // if current_device == config.device {
-    //     println!("Stop Device: {}", current_device);
-    //     remote
-    //         .parameters()
-    //         .bus(Device::from(config.bus.clone()))?
-    //         .device()
-    //         .mme()
-    //         .set("")?;
-    // } else {
-    //     println!("Start Device: {}", config.device);
-    //     remote
-    //         .parameters()
-    //         .bus(Device::from(config.bus.clone()))?
-    //         .device()
-    //         .mme()
-    //         .set(&config.device)?;
-    // }
+    std::thread::sleep(std::time::Duration::from_millis(config.sleep));
     Ok(())
-}
-
-fn get_current_name(remote: VoicemeeterRemote, config: Config) -> Result<String, Box<dyn Error>> {
-    let current_device = remote
-        .parameters()
-        .bus(Device::from(config.bus.clone()))?
-        .device()
-        .name()
-        .get()?;
-    Ok(current_device)
 }
